@@ -29,59 +29,35 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import ApiService from '../services/api';
 
-// Sample charger data (in real app, this would come from API)
-const SAMPLE_CHARGERS = [
-  {
-    id: '1',
-    name: 'Coquitlam Centre ChargePoint',
-    address: '2929 Barnet Hwy, Coquitlam, BC',
-    type: 'DC Fast Charging',
-    power: '150 kW',
-    available: 3,
-    total: 4,
-    price: 0.35,
-    connectorTypes: ['CCS', 'CHAdeMO'],
-  },
-  {
-    id: '2',
-    name: 'Burnaby Heights EV Station',
-    address: '4567 Hastings St, Burnaby, BC',
-    type: 'Level 2',
-    power: '22 kW',
-    available: 2,
-    total: 6,
-    price: 0.25,
-    connectorTypes: ['Type 2', 'J1772'],
-  },
-  {
-    id: '3',
-    name: 'Metrotown Power Hub',
-    address: '4800 Kingsway, Burnaby, BC',
-    type: 'DC Fast Charging',
-    power: '100 kW',
-    available: 1,
-    total: 3,
-    price: 0.40,
-    connectorTypes: ['CCS', 'CHAdeMO'],
-  },
-  {
-    id: '4',
-    name: 'Square One EV Hub',
-    address: '100 City Centre Dr, Mississauga, ON',
-    type: 'DC Fast Charging',
-    power: '200 kW',
-    available: 5,
-    total: 8,
-    price: 0.38,
-    connectorTypes: ['CCS', 'CHAdeMO', 'Tesla'],
-  },
-];
+interface Station {
+  id: string;
+  name: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  connectorTypes: Array<{
+    type: string;
+    power: number;
+    count: number;
+    available: number;
+  }>;
+  pricing: {
+    perKwh: number;
+    currency: string;
+  };
+  totalPorts: number;
+  availablePorts: number;
+}
 
 const ReservationPage: React.FC = () => {
   const { stationId } = useParams<{ stationId: string }>();
   const navigate = useNavigate();
   
-  const [station, setStation] = useState<any>(null);
+  const [station, setStation] = useState<Station | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,14 +70,35 @@ const ReservationPage: React.FC = () => {
   const [estimatedEnergy, setEstimatedEnergy] = useState(30);
 
   useEffect(() => {
-    // In real app, fetch station details from API
-    const foundStation = SAMPLE_CHARGERS.find(s => s.id === stationId);
-    if (foundStation) {
-      setStation(foundStation);
-      setConnectorType(foundStation.connectorTypes[0]);
+    if (stationId) {
+      fetchStationDetails();
     }
-    setLoading(false);
   }, [stationId]);
+
+  const fetchStationDetails = async () => {
+    try {
+      // Workaround: Get station from stations list since getStationById has issues
+      const response = await ApiService.getStations();
+      if (response.success) {
+        const foundStation = response.data.find((station: any) => station.id === stationId);
+        if (foundStation) {
+          setStation(foundStation);
+          if (foundStation.connectorTypes.length > 0) {
+            setConnectorType(foundStation.connectorTypes[0].type);
+          }
+        } else {
+          setError('Station not found');
+        }
+      } else {
+        setError('Failed to load station details');
+      }
+    } catch (err) {
+      console.error('Error fetching station details:', err);
+      setError('Failed to load station details');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const calculateDuration = () => {
     if (startTime && endTime) {
@@ -113,7 +110,7 @@ const ReservationPage: React.FC = () => {
   const calculateEstimatedCost = () => {
     if (station && startTime && endTime) {
       const duration = calculateDuration();
-      return duration * estimatedEnergy * station.price;
+      return duration * estimatedEnergy * station.pricing.perKwh;
     }
     return 0;
   };
@@ -223,15 +220,14 @@ const ReservationPage: React.FC = () => {
                   </Typography>
                   <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
                     <LocationOn sx={{ fontSize: 20, mr: 1 }} />
-                    {station.address}
+                    {station.address.street}, {station.address.city}, {station.address.state} {station.address.zipCode}, {station.address.country}
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 1.5, mb: 3 }}>
-                    <Chip label={station.type} size="medium" />
-                    <Chip label={station.power} size="medium" />
-                    <Chip label={`$${station.price}/kWh`} size="medium" />
+                    <Chip label={`${station.connectorTypes[0].type} - ${station.connectorTypes[0].power} kW`} size="medium" />
+                    <Chip label={`$${station.pricing.perKwh}/kWh`} size="medium" />
                   </Box>
                   <Typography variant="h6">
-                    Available: {station.available}/{station.total} chargers
+                    Available: {station.availablePorts}/{station.totalPorts} chargers
                   </Typography>
                 </Box>
               </Box>
@@ -259,9 +255,9 @@ const ReservationPage: React.FC = () => {
                     label="Connector Type"
                     onChange={(e) => setConnectorType(e.target.value)}
                   >
-                    {station.connectorTypes.map((type: string) => (
-                      <MenuItem key={type} value={type}>
-                        {type}
+                    {station.connectorTypes.map((type: any) => (
+                      <MenuItem key={type.type} value={type.type}>
+                        {type.type}
                       </MenuItem>
                     ))}
                   </Select>

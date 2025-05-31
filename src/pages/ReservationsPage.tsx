@@ -31,13 +31,20 @@ interface Reservation {
   stationId: {
     _id: string;
     name: string;
-    address: string;
+    address: {
+      street: string;
+      city: string;
+      state: string;
+      zipCode: string;
+      country: string;
+    };
   };
   connectorType: string;
   startTime: string;
   endTime: string;
   status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
   totalCost?: number;
+  estimatedCost?: number;
   energyDelivered?: number;
 }
 
@@ -185,79 +192,97 @@ const ReservationsPage: React.FC = () => {
     }
   };
 
-  const renderReservationCard = (reservation: Reservation) => (
-    <Card key={reservation._id}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-          <EvStation sx={{ mr: 1, color: '#4CAF50' }} />
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" sx={{ fontSize: '1rem', mb: 0.5 }}>
-              {reservation.stationId?.name || 'Unknown Station'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              <LocationOn sx={{ fontSize: 16, mr: 0.5 }} />
-              {reservation.stationId?.address || 'Unknown Address'}
-            </Typography>
-          </Box>
-          <Chip
-            icon={getStatusIcon(reservation.status)}
-            label={reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
-            size="small"
-            sx={{ color: getStatusColor(reservation.status) }}
-          />
-        </Box>
+  const renderReservationCard = (reservation: Reservation) => {
+    try {
+      return (
+        <Card key={reservation._id}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+              <EvStation sx={{ mr: 1, color: '#4CAF50' }} />
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h6" sx={{ fontSize: '1rem', mb: 0.5 }}>
+                  {reservation.stationId?.name || 'Unknown Station'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  <LocationOn sx={{ fontSize: 16, mr: 0.5 }} />
+                  {reservation.stationId?.address 
+                    ? `${reservation.stationId.address.street}, ${reservation.stationId.address.city}, ${reservation.stationId.address.state}`
+                    : 'Unknown Address'
+                  }
+                </Typography>
+              </Box>
+              <Chip
+                icon={getStatusIcon(reservation.status)}
+                label={reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
+                size="small"
+                sx={{ color: getStatusColor(reservation.status) }}
+              />
+            </Box>
 
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="body2" sx={{ mb: 0.5 }}>
-            <strong>Date:</strong> {formatDate(reservation.startTime)}
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 0.5 }}>
-            <strong>Time:</strong> {formatTime(reservation.startTime)} - {formatTime(reservation.endTime)}
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 0.5 }}>
-            <strong>Connector:</strong> {reservation.connectorType}
-          </Typography>
-          {reservation.totalCost && (
-            <Typography variant="body2" sx={{ mb: 0.5 }}>
-              <strong>Cost:</strong> ${reservation.totalCost.toFixed(2)}
-            </Typography>
-          )}
-          {reservation.energyDelivered && (
-            <Typography variant="body2">
-              <strong>Energy:</strong> {reservation.energyDelivered.toFixed(1)} kWh
-            </Typography>
-          )}
-        </Box>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                <strong>Date:</strong> {formatDate(reservation.startTime)}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                <strong>Time:</strong> {formatTime(reservation.startTime)} - {formatTime(reservation.endTime)}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                <strong>Connector:</strong> {reservation.connectorType}
+              </Typography>
+              {(reservation.totalCost || reservation.estimatedCost) && (
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  <strong>Cost:</strong> ${(reservation.totalCost || reservation.estimatedCost)?.toFixed(2)}
+                </Typography>
+              )}
+              {reservation.energyDelivered && (
+                <Typography variant="body2">
+                  <strong>Energy:</strong> {reservation.energyDelivered.toFixed(1)} kWh
+                </Typography>
+              )}
+            </Box>
 
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          {reservation.status === 'confirmed' && new Date(reservation.startTime) <= new Date() && (
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<PlayArrow />}
-              onClick={() => handleStartCharging(reservation)}
-              sx={{ flex: 1 }}
-            >
-              Start
-            </Button>
-          )}
-          
-          {['pending', 'confirmed'].includes(reservation.status) && new Date(reservation.startTime) > new Date() && (
-            <Button
-              variant="outlined"
-              size="small"
-              color="error"
-              startIcon={<Cancel />}
-              onClick={() => setCancelDialog({ open: true, reservation })}
-              sx={{ flex: 1 }}
-            >
-              Cancel
-            </Button>
-          )}
-        </Box>
-      </CardContent>
-    </Card>
-  );
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {reservation.status === 'confirmed' && new Date(reservation.startTime) <= new Date() && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<PlayArrow />}
+                  onClick={() => handleStartCharging(reservation)}
+                  sx={{ flex: 1 }}
+                >
+                  Start
+                </Button>
+              )}
+              
+              {['pending', 'confirmed'].includes(reservation.status) && new Date(reservation.startTime) > new Date() && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  color="error"
+                  startIcon={<Cancel />}
+                  onClick={() => setCancelDialog({ open: true, reservation })}
+                  sx={{ flex: 1 }}
+                >
+                  Cancel
+                </Button>
+              )}
+            </Box>
+          </CardContent>
+        </Card>
+      );
+    } catch (error) {
+      console.error('Error rendering reservation card:', error);
+      return (
+        <Card key={reservation._id || Math.random()}>
+          <CardContent>
+            <Alert severity="error">
+              Error displaying reservation details
+            </Alert>
+          </CardContent>
+        </Card>
+      );
+    }
+  };
 
   const renderEmptyState = (type: string) => (
     <Box sx={{ textAlign: 'center', py: 4 }}>

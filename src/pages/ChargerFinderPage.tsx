@@ -24,6 +24,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useNavigate } from 'react-router-dom';
+import ApiService from '../services/api';
 
 // Fix for default markers in React Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -33,65 +34,34 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Sample charging stations data
-const SAMPLE_CHARGERS = [
-  {
-    id: '1',
-    name: 'Coquitlam Centre ChargePoint',
-    address: '2929 Barnet Hwy, Coquitlam, BC',
-    type: 'DC Fast Charging',
-    power: '150 kW',
-    available: 3,
-    total: 4,
-    price: '$0.35/kWh',
-    coordinate: {
-      latitude: 49.2781,
-      longitude: -122.7912,
-    },
-  },
-  {
-    id: '2',
-    name: 'Burnaby Heights EV Station',
-    address: '4567 Hastings St, Burnaby, BC',
-    type: 'Level 2',
-    power: '22 kW',
-    available: 2,
-    total: 6,
-    price: '$0.25/kWh',
-    coordinate: {
-      latitude: 49.2827,
-      longitude: -123.0186,
-    },
-  },
-  {
-    id: '3',
-    name: 'Metrotown Power Hub',
-    address: '4800 Kingsway, Burnaby, BC',
-    type: 'DC Fast Charging',
-    power: '100 kW',
-    available: 1,
-    total: 3,
-    price: '$0.40/kWh',
-    coordinate: {
-      latitude: 49.2262,
-      longitude: -123.0038,
-    },
-  },
-  {
-    id: '4',
-    name: 'Square One EV Hub',
-    address: '100 City Centre Dr, Mississauga, ON',
-    type: 'DC Fast Charging',
-    power: '200 kW',
-    available: 5,
-    total: 8,
-    price: '$0.38/kWh',
-    coordinate: {
-      latitude: 43.5933,
-      longitude: -79.6441,
-    },
-  },
-];
+interface Station {
+  id: string;
+  name: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  location: {
+    coordinates: [number, number];
+  };
+  connectorTypes: Array<{
+    type: string;
+    power: number;
+    count: number;
+    available: number;
+  }>;
+  pricing: {
+    perKwh: number;
+    currency: string;
+  };
+  totalPorts: number;
+  availablePorts: number;
+  rating: number;
+  amenities: string[];
+}
 
 const ChargerFinderPage: React.FC = () => {
   const navigate = useNavigate();
@@ -99,13 +69,32 @@ const ChargerFinderPage: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
   const [searchQuery, setSearchQuery] = useState('');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>({ lat: 49.2827, lng: -123.1207 }); // Default to Vancouver
-  const [loading, setLoading] = useState(false); // Start as false since we have default location
+  const [loading, setLoading] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const nearbyChargers = SAMPLE_CHARGERS; // Use const instead of state since it's not being updated
+  const [stations, setStations] = useState<Station[]>([]);
+  const [stationsError, setStationsError] = useState<string | null>(null);
 
   useEffect(() => {
     getCurrentLocation();
+    fetchStations();
   }, []);
+
+  const fetchStations = async () => {
+    try {
+      const response = await ApiService.getStations();
+      if (response.success) {
+        setStations(response.data);
+        setStationsError(null);
+      } else {
+        setStationsError('Failed to load charging stations');
+      }
+    } catch (error) {
+      console.error('Error fetching stations:', error);
+      setStationsError('Failed to load charging stations');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
@@ -117,18 +106,15 @@ const ChargerFinderPage: React.FC = () => {
           };
           setUserLocation(location);
           setLocationError(null);
-          setLoading(false);
         },
         (error) => {
           console.error('Error getting location:', error);
           setLocationError('Unable to get your exact location. Showing Vancouver area.');
-          setLoading(false);
           // Keep default Vancouver location
         }
       );
     } else {
       setLocationError('Geolocation is not supported by this browser. Showing Vancouver area.');
-      setLoading(false);
       // Keep default Vancouver location
     }
   };
@@ -163,9 +149,9 @@ const ChargerFinderPage: React.FC = () => {
     navigate(`/reservation/${chargerId}`);
   };
 
-  const filteredChargers = nearbyChargers.filter(charger =>
+  const filteredChargers = stations.filter(charger =>
     charger.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    charger.address.toLowerCase().includes(searchQuery.toLowerCase())
+    charger.address.street.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
@@ -173,6 +159,19 @@ const ChargerFinderPage: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <CircularProgress />
       </Box>
+    );
+  }
+
+  if (stationsError) {
+    return (
+      <Container maxWidth="md" sx={{ py: 3 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {stationsError}
+        </Alert>
+        <Button variant="contained" onClick={fetchStations}>
+          Retry Loading Stations
+        </Button>
+      </Container>
     );
   }
 
@@ -226,7 +225,7 @@ const ChargerFinderPage: React.FC = () => {
               {filteredChargers.map((charger) => (
                 <Marker
                   key={charger.id}
-                  position={[charger.coordinate.latitude, charger.coordinate.longitude]}
+                  position={[charger.location.coordinates[0], charger.location.coordinates[1]]}
                 >
                   <Popup>
                     <Box sx={{ minWidth: 200 }}>
@@ -234,14 +233,15 @@ const ChargerFinderPage: React.FC = () => {
                         {charger.name}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        {charger.address}
+                        {charger.address.street}, {charger.address.city}, {charger.address.state}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                        <Chip label={charger.type} size="small" />
-                        <Chip label={charger.power} size="small" />
+                        {charger.connectorTypes.map((connector) => (
+                          <Chip key={connector.type} label={connector.type} size="small" />
+                        ))}
                       </Box>
                       <Typography variant="body2" sx={{ mb: 1 }}>
-                        Available: {charger.available}/{charger.total}
+                        Available: {charger.availablePorts}/{charger.totalPorts}
                       </Typography>
                       <Button
                         variant="contained"
@@ -279,24 +279,25 @@ const ChargerFinderPage: React.FC = () => {
                           </Typography>
                           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                             <LocationOn sx={{ fontSize: 16, mr: 0.5 }} />
-                            {charger.address}
+                            {charger.address.street}, {charger.address.city}, {charger.address.state}
                           </Typography>
                         </Box>
                       </Box>
                       
                       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                        <Chip label={charger.type} size="small" />
-                        <Chip label={charger.power} size="small" />
+                        {charger.connectorTypes.map((connector) => (
+                          <Chip key={connector.type} label={connector.type} size="small" />
+                        ))}
                       </Box>
                       
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                         <Typography variant="body2">
-                          Available: <span style={{ color: getAvailabilityColor(charger.available, charger.total) }}>
-                            {charger.available}/{charger.total}
+                          Available: <span style={{ color: getAvailabilityColor(charger.availablePorts, charger.totalPorts) }}>
+                            {charger.availablePorts}/{charger.totalPorts}
                           </span>
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {charger.price}
+                          {charger.pricing.currency} {charger.pricing.perKwh.toFixed(2)}/kWh
                         </Typography>
                       </Box>
                       
@@ -306,8 +307,8 @@ const ChargerFinderPage: React.FC = () => {
                           {calculateDistance(
                             userLocation.lat,
                             userLocation.lng,
-                            charger.coordinate.latitude,
-                            charger.coordinate.longitude
+                            charger.location.coordinates[0],
+                            charger.location.coordinates[1]
                           )}
                         </Typography>
                       )}
@@ -316,9 +317,9 @@ const ChargerFinderPage: React.FC = () => {
                         variant="contained"
                         fullWidth
                         onClick={() => handleReserveCharger(charger.id)}
-                        disabled={charger.available === 0}
+                        disabled={charger.availablePorts === 0}
                       >
-                        {charger.available === 0 ? 'Unavailable' : 'Reserve'}
+                        {charger.availablePorts === 0 ? 'Unavailable' : 'Reserve'}
                       </Button>
                     </CardContent>
                   </Card>
@@ -377,7 +378,7 @@ const ChargerFinderPage: React.FC = () => {
             {filteredChargers.map((charger) => (
               <Marker
                 key={charger.id}
-                position={[charger.coordinate.latitude, charger.coordinate.longitude]}
+                position={[charger.location.coordinates[0], charger.location.coordinates[1]]}
               >
                 <Popup>
                   <Box sx={{ minWidth: 200 }}>
@@ -385,14 +386,15 @@ const ChargerFinderPage: React.FC = () => {
                       {charger.name}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {charger.address}
+                      {charger.address.street}, {charger.address.city}, {charger.address.state}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                      <Chip label={charger.type} size="small" />
-                      <Chip label={charger.power} size="small" />
+                      {charger.connectorTypes.map((connector) => (
+                        <Chip key={connector.type} label={connector.type} size="small" />
+                      ))}
                     </Box>
                     <Typography variant="body2" sx={{ mb: 1 }}>
-                      Available: {charger.available}/{charger.total}
+                      Available: {charger.availablePorts}/{charger.totalPorts}
                     </Typography>
                     <Button
                       variant="contained"
@@ -442,24 +444,25 @@ const ChargerFinderPage: React.FC = () => {
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                         <LocationOn sx={{ fontSize: 14, mr: 0.5 }} />
-                        {charger.address}
+                        {charger.address.street}, {charger.address.city}, {charger.address.state}
                       </Typography>
                     </Box>
                   </Box>
                   
                   <Box sx={{ display: 'flex', gap: 0.5, mb: 2, flexWrap: 'wrap' }}>
-                    <Chip label={charger.type} size="small" />
-                    <Chip label={charger.power} size="small" />
+                    {charger.connectorTypes.map((connector) => (
+                      <Chip key={connector.type} label={connector.type} size="small" />
+                    ))}
                   </Box>
                   
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="body2">
-                      Available: <span style={{ color: getAvailabilityColor(charger.available, charger.total), fontWeight: 600 }}>
-                        {charger.available}/{charger.total}
+                      Available: <span style={{ color: getAvailabilityColor(charger.availablePorts, charger.totalPorts), fontWeight: 600 }}>
+                        {charger.availablePorts}/{charger.totalPorts}
                       </span>
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                      {charger.price}
+                      {charger.pricing.currency} {charger.pricing.perKwh.toFixed(2)}/kWh
                     </Typography>
                   </Box>
                   
@@ -469,8 +472,8 @@ const ChargerFinderPage: React.FC = () => {
                       {calculateDistance(
                         userLocation.lat,
                         userLocation.lng,
-                        charger.coordinate.latitude,
-                        charger.coordinate.longitude
+                        charger.location.coordinates[0],
+                        charger.location.coordinates[1]
                       )}
                     </Typography>
                   )}
@@ -479,14 +482,14 @@ const ChargerFinderPage: React.FC = () => {
                     variant="contained"
                     fullWidth
                     onClick={() => handleReserveCharger(charger.id)}
-                    disabled={charger.available === 0}
+                    disabled={charger.availablePorts === 0}
                     sx={{ 
                       py: 1,
                       fontSize: '0.9rem',
                       fontWeight: 600,
                     }}
                   >
-                    {charger.available === 0 ? 'Unavailable' : 'Reserve'}
+                    {charger.availablePorts === 0 ? 'Unavailable' : 'Reserve'}
                   </Button>
                 </CardContent>
               </Card>

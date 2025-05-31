@@ -2,9 +2,11 @@ import axios from 'axios';
 import type { AxiosInstance, AxiosResponse } from 'axios';
 
 // Use environment-based API URL
-const API_BASE_URL = import.meta.env.DEV 
-  ? 'http://localhost:3000/api'  // Development - local backend
-  : 'https://ev-finder-backend.onrender.com/api';  // Production - deployed backend
+const API_BASE_URL = 'http://localhost:3000/api'; // Temporarily hardcoded for debugging
+
+console.log('API_BASE_URL:', API_BASE_URL);
+console.log('import.meta.env.DEV:', import.meta.env.DEV);
+console.log('import.meta.env.MODE:', import.meta.env.MODE);
 
 interface ApiResponse<T = any> {
   success: boolean;
