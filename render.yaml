@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: ev-finder-frontend
+    runtime: node
+    plan: free
+    buildCommand: npm run render-build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "18"
+      - key: VITE_API_URL
+        value: "https://your-backend-url.onrender.com/api"
+    headers:
+      - path: /*
+        name: X-Robots-Tag
+        value: noindex 
