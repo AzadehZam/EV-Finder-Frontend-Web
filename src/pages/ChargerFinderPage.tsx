@@ -26,6 +26,34 @@ import 'leaflet/dist/leaflet.css';
 import { useNavigate } from 'react-router-dom';
 import ApiService from '../services/api';
 
+// Add custom styles for EV charger icons
+const customStyles = `
+  .custom-ev-charger {
+    background: none !important;
+    border: none !important;
+  }
+  .custom-ev-charger svg {
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+    transition: all 0.3s ease;
+  }
+  .custom-ev-charger:hover svg {
+    transform: scale(1.2);
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5));
+  }
+  
+  /* Make sure default leaflet markers look different */
+  .leaflet-marker-icon:not(.custom-ev-charger) {
+    filter: drop-shadow(0 2px 4px rgba(0,100,255,0.4));
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.innerText = customStyles;
+  document.head.appendChild(styleSheet);
+}
+
 // Fix for default markers in React Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -33,6 +61,54 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
+
+// Create custom EV charger icons
+const createEvChargerIcon = (availability: 'available' | 'limited' | 'unavailable') => {
+  const colors = {
+    available: '#059669',   // Dark emerald green
+    limited: '#FF9800',     // Orange  
+    unavailable: '#F44336'  // Red
+  };
+
+  const color = colors[availability];
+  
+  // Create a distinctive square/rectangular EV charger icon
+  const svgIcon = `
+    <svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer border -->
+      <rect x="2" y="2" width="32" height="32" rx="4" fill="white" stroke="${color}" stroke-width="3"/>
+      
+      <!-- Inner background -->
+      <rect x="5" y="5" width="26" height="26" rx="2" fill="${color}"/>
+      
+      <!-- EV Text -->
+      <text x="18" y="16" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="8" font-weight="bold">EV</text>
+      
+      <!-- Charging plug symbol -->
+      <rect x="14" y="19" width="8" height="3" rx="1" fill="white"/>
+      <rect x="16" y="22" width="4" height="2" rx="1" fill="white"/>
+      
+      <!-- Small lightning bolt -->
+      <path d="M17 26 L19 26 L18 28 L20 28 L17 31 L16 29 L18 29 L17 26 Z" fill="white"/>
+    </svg>
+  `;
+
+  return L.divIcon({
+    html: svgIcon,
+    className: 'custom-ev-charger',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18]
+  });
+};
+
+// Get availability status based on available/total ports ratio
+const getAvailabilityStatus = (available: number, total: number): 'available' | 'limited' | 'unavailable' => {
+  if (available === 0) return 'unavailable';
+  const ratio = available / total;
+  if (ratio > 0.5) return 'available';
+  return 'limited';
+};
 
 interface Station {
   id: string;
@@ -68,11 +144,12 @@ const ChargerFinderPage: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
   const [searchQuery, setSearchQuery] = useState('');
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>({ lat: 49.2827, lng: -123.1207 }); // Default to Vancouver
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null); // Start with null
   const [loading, setLoading] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [stations, setStations] = useState<Station[]>([]);
   const [stationsError, setStationsError] = useState<string | null>(null);
+  const [locationLoading, setLocationLoading] = useState(true); // Add separate loading state for location
 
   useEffect(() => {
     getCurrentLocation();
@@ -106,16 +183,21 @@ const ChargerFinderPage: React.FC = () => {
           };
           setUserLocation(location);
           setLocationError(null);
+          setLocationLoading(false);
         },
         (error) => {
           console.error('Error getting location:', error);
           setLocationError('Unable to get your exact location. Showing Vancouver area.');
-          // Keep default Vancouver location
+          // Fall back to Vancouver if location fails
+          setUserLocation({ lat: 49.2827, lng: -123.1207 });
+          setLocationLoading(false);
         }
       );
     } else {
       setLocationError('Geolocation is not supported by this browser. Showing Vancouver area.');
-      // Keep default Vancouver location
+      // Fall back to Vancouver if geolocation not supported
+      setUserLocation({ lat: 49.2827, lng: -123.1207 });
+      setLocationLoading(false);
     }
   };
 
@@ -154,10 +236,13 @@ const ChargerFinderPage: React.FC = () => {
     charger.address.street.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (loading) {
+  if (loading || locationLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <CircularProgress />
+        <Typography sx={{ ml: 2 }}>
+          {locationLoading ? 'Getting your location...' : 'Loading charging stations...'}
+        </Typography>
       </Box>
     );
   }
@@ -222,39 +307,50 @@ const ChargerFinderPage: React.FC = () => {
               </Marker>
               
               {/* Charging Station Markers */}
-              {filteredChargers.map((charger) => (
-                <Marker
-                  key={charger.id}
-                  position={[charger.location.coordinates[0], charger.location.coordinates[1]]}
-                >
-                  <Popup>
-                    <Box sx={{ minWidth: 200 }}>
-                      <Typography variant="h6" sx={{ mb: 1 }}>
-                        {charger.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        {charger.address.street}, {charger.address.city}, {charger.address.state}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                        {charger.connectorTypes.map((connector) => (
-                          <Chip key={connector.type} label={connector.type} size="small" />
-                        ))}
+              {filteredChargers.map((charger) => {
+                const availabilityStatus = getAvailabilityStatus(charger.availablePorts, charger.totalPorts);
+                // Fix coordinate order: backend gives [lng, lat] but Leaflet expects [lat, lng]
+                const lat = charger.location.coordinates[1];
+                const lng = charger.location.coordinates[0];
+                const customIcon = createEvChargerIcon(availabilityStatus);
+                
+                console.log(`Creating marker for ${charger.name} at [${lat}, ${lng}] with status: ${availabilityStatus}`);
+                
+                return (
+                  <Marker
+                    key={charger.id}
+                    position={[lat, lng]}
+                    icon={customIcon}
+                  >
+                    <Popup>
+                      <Box sx={{ minWidth: 200 }}>
+                        <Typography variant="h6" sx={{ mb: 1 }}>
+                          {charger.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          {charger.address.street}, {charger.address.city}, {charger.address.state}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                          {charger.connectorTypes.map((connector) => (
+                            <Chip key={connector.type} label={connector.type} size="small" />
+                          ))}
+                        </Box>
+                        <Typography variant="body2" sx={{ mb: 1 }}>
+                          Available: {charger.availablePorts}/{charger.totalPorts}
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          fullWidth
+                          onClick={() => handleReserveCharger(charger.id)}
+                        >
+                          Reserve
+                        </Button>
                       </Box>
-                      <Typography variant="body2" sx={{ mb: 1 }}>
-                        Available: {charger.availablePorts}/{charger.totalPorts}
-                      </Typography>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        fullWidth
-                        onClick={() => handleReserveCharger(charger.id)}
-                      >
-                        Reserve
-                      </Button>
-                    </Box>
-                  </Popup>
-                </Marker>
-              ))}
+                    </Popup>
+                  </Marker>
+                );
+              })}
             </MapContainer>
           )}
         </Box>
@@ -307,8 +403,8 @@ const ChargerFinderPage: React.FC = () => {
                           {calculateDistance(
                             userLocation.lat,
                             userLocation.lng,
-                            charger.location.coordinates[0],
-                            charger.location.coordinates[1]
+                            charger.location.coordinates[1], // latitude
+                            charger.location.coordinates[0]  // longitude
                           )}
                         </Typography>
                       )}
@@ -375,41 +471,80 @@ const ChargerFinderPage: React.FC = () => {
             </Marker>
             
             {/* Charging Station Markers */}
-            {filteredChargers.map((charger) => (
-              <Marker
-                key={charger.id}
-                position={[charger.location.coordinates[0], charger.location.coordinates[1]]}
-              >
-                <Popup>
-                  <Box sx={{ minWidth: 200 }}>
-                    <Typography variant="h6" sx={{ mb: 1 }}>
-                      {charger.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {charger.address.street}, {charger.address.city}, {charger.address.state}
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                      {charger.connectorTypes.map((connector) => (
-                        <Chip key={connector.type} label={connector.type} size="small" />
-                      ))}
+            {filteredChargers.map((charger) => {
+              const availabilityStatus = getAvailabilityStatus(charger.availablePorts, charger.totalPorts);
+              // Fix coordinate order: backend gives [lng, lat] but Leaflet expects [lat, lng]
+              const lat = charger.location.coordinates[1];
+              const lng = charger.location.coordinates[0];
+              const customIcon = createEvChargerIcon(availabilityStatus);
+              
+              console.log(`Creating marker for ${charger.name} at [${lat}, ${lng}] with status: ${availabilityStatus}`);
+              
+              return (
+                <Marker
+                  key={charger.id}
+                  position={[lat, lng]}
+                  icon={customIcon}
+                >
+                  <Popup>
+                    <Box sx={{ minWidth: 200 }}>
+                      <Typography variant="h6" sx={{ mb: 1 }}>
+                        {charger.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        {charger.address.street}, {charger.address.city}, {charger.address.state}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                        {charger.connectorTypes.map((connector) => (
+                          <Chip key={connector.type} label={connector.type} size="small" />
+                        ))}
+                      </Box>
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+                        Available: {charger.availablePorts}/{charger.totalPorts}
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        fullWidth
+                        onClick={() => handleReserveCharger(charger.id)}
+                      >
+                        Reserve
+                      </Button>
                     </Box>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      Available: {charger.availablePorts}/{charger.totalPorts}
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      fullWidth
-                      onClick={() => handleReserveCharger(charger.id)}
-                    >
-                      Reserve
-                    </Button>
-                  </Box>
-                </Popup>
-              </Marker>
-            ))}
+                  </Popup>
+                </Marker>
+              );
+            })}
           </MapContainer>
         )}
+        
+        {/* Map Legend - Desktop Only */}
+        <Card sx={{
+          position: 'absolute',
+          bottom: 20,
+          right: 20,
+          zIndex: 1000,
+          p: 1,
+          minWidth: 150
+        }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
+            Station Status
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#22C55E' }} />
+              <Typography variant="caption">Available</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#FF9800' }} />
+              <Typography variant="caption">Limited</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#F44336' }} />
+              <Typography variant="caption">Unavailable</Typography>
+            </Box>
+          </Box>
+        </Card>
       </Box>
 
       {/* Charger List Section - Right Side */}
@@ -468,12 +603,12 @@ const ChargerFinderPage: React.FC = () => {
                   
                   {userLocation && (
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      <Navigation sx={{ fontSize: 14, mr: 0.5 }} />
+                      <Navigation sx={{ fontSize: 16, mr: 0.5 }} />
                       {calculateDistance(
                         userLocation.lat,
                         userLocation.lng,
-                        charger.location.coordinates[0],
-                        charger.location.coordinates[1]
+                        charger.location.coordinates[1], // latitude
+                        charger.location.coordinates[0]  // longitude
                       )}
                     </Typography>
                   )}
