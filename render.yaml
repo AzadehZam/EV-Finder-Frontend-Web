@@ -13,8 +13,41 @@ services:
       - key: NODE_VERSION
         value: "18"
       - key: VITE_API_URL
-        value: "https://your-backend-url.onrender.com/api"
+        value: "https://ev-finder-backend.onrender.com/api"
     headers:
       - path: /*
         name: X-Robots-Tag
-        value: noindex 
+        value: noindex
+
+  - type: web
+    name: ev-finder-backend
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: "7d"
+      - key: AUTH0_DOMAIN
+        value: "dev-zrjqxip57a10h8fo.us.auth0.com"
+      - key: AUTH0_AUDIENCE
+        value: "https://dev-zrjqxip57a10h8fo.us.auth0.com/api/v2/"
+      - key: ALLOWED_ORIGINS
+        value: "https://ev-finder-frontend-web.onrender.com"
+      - key: FRONTEND_URL
+        value: "https://ev-finder-frontend-web.onrender.com"
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "100"
+      - key: API_VERSION
+        value: "v1"
+    healthCheckPath: /health 
