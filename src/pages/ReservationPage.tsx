@@ -47,6 +47,8 @@ interface Station {
   }>;
   pricing: {
     perKwh: number;
+    perMinute?: number;
+    sessionFee?: number;
     currency: string;
   };
   totalPorts: number;
@@ -110,7 +112,18 @@ const ReservationPage: React.FC = () => {
   const calculateEstimatedCost = () => {
     if (station && startTime && endTime) {
       const duration = calculateDuration();
-      return duration * estimatedEnergy * station.pricing.perKwh;
+      const durationInMinutes = duration * 60;
+      
+      // Energy cost (kWh * perKwh)
+      const energyCost = estimatedEnergy * station.pricing.perKwh;
+      
+      // Time-based cost (minutes * perMinute)
+      const timeCost = station.pricing.perMinute ? durationInMinutes * station.pricing.perMinute : 0;
+      
+      // Session fee (one-time charge)
+      const sessionFee = station.pricing.sessionFee || 0;
+      
+      return energyCost + timeCost + sessionFee;
     }
     return 0;
   };
@@ -222,9 +235,15 @@ const ReservationPage: React.FC = () => {
                     <LocationOn sx={{ fontSize: 20, mr: 1 }} />
                     {station.address.street}, {station.address.city}, {station.address.state} {station.address.zipCode}, {station.address.country}
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 1.5, mb: 3 }}>
+                  <Box sx={{ display: 'flex', gap: 1.5, mb: 3, flexWrap: 'wrap' }}>
                     <Chip label={`${station.connectorTypes[0].type} - ${station.connectorTypes[0].power} kW`} size="medium" />
-                    <Chip label={`$${station.pricing.perKwh}/kWh`} size="medium" />
+                    <Chip label={`${station.pricing.currency} ${station.pricing.perKwh}/kWh`} size="medium" />
+                    {station.pricing.perMinute && (
+                      <Chip label={`${station.pricing.currency} ${station.pricing.perMinute}/min`} size="medium" />
+                    )}
+                    {station.pricing.sessionFee && (
+                      <Chip label={`${station.pricing.currency} ${station.pricing.sessionFee} session fee`} size="medium" />
+                    )}
                   </Box>
                   <Typography variant="h6">
                     Available: {station.availablePorts}/{station.totalPorts} chargers
@@ -326,8 +345,25 @@ const ReservationPage: React.FC = () => {
                     Estimated Cost:
                   </Typography>
                   <Typography variant="h5" sx={{ fontWeight: 600, color: '#4CAF50' }}>
-                    ${calculateEstimatedCost().toFixed(2)}
+                    {station.pricing.currency} {calculateEstimatedCost().toFixed(2)}
                   </Typography>
+                  {station && startTime && endTime && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        Energy: {station.pricing.currency} {(estimatedEnergy * station.pricing.perKwh).toFixed(2)}
+                      </Typography>
+                      {station.pricing.perMinute && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          Time: {station.pricing.currency} {(calculateDuration() * 60 * station.pricing.perMinute).toFixed(2)}
+                        </Typography>
+                      )}
+                      {station.pricing.sessionFee && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          Session fee: {station.pricing.currency} {station.pricing.sessionFee.toFixed(2)}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
                 </Box>
               </Box>
 
