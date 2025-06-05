@@ -308,7 +308,7 @@ const ReservationPage: React.FC = () => {
 
               <Box sx={{ 
                 display: 'grid', 
-                gridTemplateColumns: { xs: '1fr', sm: 'repeat(1, 1fr)' }, 
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, 
                 gap: 3,
                 mb: 4,
               }}>
@@ -319,6 +319,26 @@ const ReservationPage: React.FC = () => {
                   <Typography variant="h5" sx={{ fontWeight: 600 }}>
                     {calculateDuration().toFixed(1)} hours
                   </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                    Pricing:
+                  </Typography>
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ display: 'block' }}>
+                      Energy: {station.pricing.currency} {station.pricing.perKwh}/kWh
+                    </Typography>
+                    {station.pricing.perMinute && (
+                      <Typography variant="body2" color="text.secondary" sx={{ display: 'block' }}>
+                        Time rate: {station.pricing.currency} {station.pricing.perMinute}/min
+                      </Typography>
+                    )}
+                    {station.pricing.sessionFee && (
+                      <Typography variant="body2" color="text.secondary" sx={{ display: 'block' }}>
+                        Session fee: {station.pricing.currency} {station.pricing.sessionFee}
+                      </Typography>
+                    )}
+                  </Box>
                 </Box>
               </Box>
 
