@@ -155,6 +155,10 @@ class ApiService {
     return this.api.delete(`/reservations/${reservationId}`);
   }
 
+  async deleteReservation(reservationId: string): Promise<ApiResponse> {
+    return this.api.delete(`/reservations/${reservationId}/delete`);
+  }
+
   async startChargingSession(reservationId: string): Promise<ApiResponse> {
     return this.api.patch(`/reservations/${reservationId}/start`);
   }

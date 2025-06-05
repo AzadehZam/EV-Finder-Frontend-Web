@@ -23,6 +23,7 @@ import {
   Cancel,
   PlayArrow,
   CheckCircle,
+  Delete,
 } from '@mui/icons-material';
 import ApiService from '../services/api';
 
@@ -57,10 +58,25 @@ const ReservationsPage: React.FC = () => {
     open: false,
     reservation: null,
   });
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; reservation: Reservation | null }>({
+    open: false,
+    reservation: null,
+  });
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchReservations();
   }, []);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000); // Hide after 3 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   const fetchReservations = async () => {
     try {
@@ -85,6 +101,8 @@ const ReservationsPage: React.FC = () => {
       if (response.success) {
         fetchReservations(); // Refresh the list
         setCancelDialog({ open: false, reservation: null });
+        setError(null);
+        setSuccessMessage('Reservation cancelled successfully');
       } else {
         setError(response.message || 'Failed to cancel reservation');
       }
@@ -99,6 +117,8 @@ const ReservationsPage: React.FC = () => {
       const response = await ApiService.startChargingSession(reservation._id);
       if (response.success) {
         fetchReservations(); // Refresh the list
+        setError(null);
+        setSuccessMessage('Charging session started successfully');
       } else {
         setError(response.message || 'Failed to start charging session');
       }
@@ -106,6 +126,47 @@ const ReservationsPage: React.FC = () => {
       console.error('Error starting charging session:', err);
       setError('Failed to start charging session. Please try again.');
     }
+  };
+
+  const handleCompleteReservation = async (reservation: Reservation) => {
+    try {
+      const response = await ApiService.updateReservation(reservation._id, { status: 'completed' });
+      if (response.success) {
+        fetchReservations(); // Refresh the list
+        setError(null);
+        setSuccessMessage('Reservation completed successfully');
+      } else {
+        setError(response.message || 'Failed to complete reservation');
+      }
+    } catch (err: any) {
+      console.error('Error completing reservation:', err);
+      setError('Failed to complete reservation. Please try again.');
+    }
+  };
+
+  const handleDeleteReservation = async (reservation: Reservation) => {
+    try {
+      const response = await ApiService.deleteReservation(reservation._id);
+      if (response.success) {
+        fetchReservations(); // Refresh the list
+        setDeleteDialog({ open: false, reservation: null });
+        setError(null);
+        setSuccessMessage('Reservation was deleted successfully');
+      } else {
+        setError(response.message || 'Failed to delete reservation');
+      }
+    } catch (err: any) {
+      console.error('Error deleting reservation:', err);
+      setError('Failed to delete reservation. Please try again.');
+    }
+  };
+
+  // Function to normalize status for display - convert pending/confirmed to active
+  const getDisplayStatus = (status: string) => {
+    if (status === 'pending' || status === 'confirmed') {
+      return 'active';
+    }
+    return status;
   };
 
   const formatDate = (dateString: string) => {
@@ -137,12 +198,8 @@ const ReservationsPage: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
-        return '#FF9800';
-      case 'confirmed':
-        return '#4CAF50';
       case 'active':
-        return '#2196F3';
+        return '#4CAF50';
       case 'completed':
         return '#666';
       case 'cancelled':
@@ -154,10 +211,6 @@ const ReservationsPage: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending':
-        return <Schedule />;
-      case 'confirmed':
-        return <CheckCircle />;
       case 'active':
         return <PlayArrow />;
       case 'completed':
@@ -170,16 +223,12 @@ const ReservationsPage: React.FC = () => {
   };
 
   // Filter reservations based on status
-  const upcomingReservations = reservations.filter(r => 
-    ['pending', 'confirmed'].includes(r.status) && new Date(r.startTime) > new Date()
-  );
-  const activeReservations = reservations.filter(r => r.status === 'active');
+  const upcomingReservations = reservations.filter(r => ['active', 'confirmed', 'pending'].includes(r.status));
   const pastReservations = reservations.filter(r => 
-    ['completed', 'cancelled'].includes(r.status) || 
-    (r.status === 'confirmed' && new Date(r.endTime) < new Date())
+    ['completed', 'cancelled'].includes(r.status)
   );
 
-  const upcomingTabData = [...activeReservations, ...upcomingReservations];
+  const upcomingTabData = upcomingReservations;
 
   const getTabData = () => {
     switch (activeTab) {
@@ -212,10 +261,10 @@ const ReservationsPage: React.FC = () => {
                 </Typography>
               </Box>
               <Chip
-                icon={getStatusIcon(reservation.status)}
-                label={reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
+                icon={getStatusIcon(getDisplayStatus(reservation.status))}
+                label={getDisplayStatus(reservation.status).charAt(0).toUpperCase() + getDisplayStatus(reservation.status).slice(1)}
                 size="small"
-                sx={{ color: getStatusColor(reservation.status) }}
+                sx={{ color: getStatusColor(getDisplayStatus(reservation.status)) }}
               />
             </Box>
 
@@ -242,7 +291,7 @@ const ReservationsPage: React.FC = () => {
             </Box>
 
             <Box sx={{ display: 'flex', gap: 1 }}>
-              {reservation.status === 'confirmed' && new Date(reservation.startTime) <= new Date() && (
+              {reservation.status === 'active' && new Date(reservation.startTime) <= new Date() && (
                 <Button
                   variant="contained"
                   size="small"
@@ -254,16 +303,41 @@ const ReservationsPage: React.FC = () => {
                 </Button>
               )}
               
-              {['pending', 'confirmed'].includes(reservation.status) && new Date(reservation.startTime) > new Date() && (
+              {['active', 'confirmed', 'pending'].includes(reservation.status) && (
+                <>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    color="success"
+                    startIcon={<CheckCircle />}
+                    onClick={() => handleCompleteReservation(reservation)}
+                    sx={{ flex: 1 }}
+                  >
+                    Complete
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    color="error"
+                    startIcon={<Cancel />}
+                    onClick={() => setCancelDialog({ open: true, reservation })}
+                    sx={{ flex: 1 }}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              )}
+
+              {['completed', 'cancelled'].includes(reservation.status) && (
                 <Button
                   variant="outlined"
                   size="small"
                   color="error"
-                  startIcon={<Cancel />}
-                  onClick={() => setCancelDialog({ open: true, reservation })}
+                  startIcon={<Delete />}
+                  onClick={() => setDeleteDialog({ open: true, reservation })}
                   sx={{ flex: 1 }}
                 >
-                  Cancel
+                  Delete
                 </Button>
               )}
             </Box>
@@ -320,6 +394,12 @@ const ReservationsPage: React.FC = () => {
           </Alert>
         )}
 
+        {successMessage && (
+          <Alert severity="success" sx={{ mb: 3 }}>
+            {successMessage}
+          </Alert>
+        )}
+
         <Tabs
           value={activeTab}
           onChange={(_, newValue) => setActiveTab(newValue)}
@@ -370,6 +450,35 @@ const ReservationsPage: React.FC = () => {
               variant="contained"
             >
               Cancel Reservation
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={deleteDialog.open}
+          onClose={() => setDeleteDialog({ open: false, reservation: null })}
+        >
+          <DialogTitle>Delete Reservation</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to permanently delete your reservation at{' '}
+              <strong>{deleteDialog.reservation?.stationId?.name}</strong>?
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              This action cannot be undone.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialog({ open: false, reservation: null })}>
+              Keep Reservation
+            </Button>
+            <Button
+              onClick={() => deleteDialog.reservation && handleDeleteReservation(deleteDialog.reservation)}
+              color="error"
+              variant="contained"
+            >
+              Delete Permanently
             </Button>
           </DialogActions>
         </Dialog>
