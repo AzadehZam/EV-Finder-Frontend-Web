@@ -109,25 +109,6 @@ const ReservationPage: React.FC = () => {
     return 0;
   };
 
-  const calculateEstimatedCost = () => {
-    if (station && startTime && endTime) {
-      const duration = calculateDuration();
-      const durationInMinutes = duration * 60;
-      
-      // Energy cost (kWh * perKwh)
-      const energyCost = estimatedEnergy * station.pricing.perKwh;
-      
-      // Time-based cost (minutes * perMinute)
-      const timeCost = station.pricing.perMinute ? durationInMinutes * station.pricing.perMinute : 0;
-      
-      // Session fee (one-time charge)
-      const sessionFee = station.pricing.sessionFee || 0;
-      
-      return energyCost + timeCost + sessionFee;
-    }
-    return 0;
-  };
-
   const handleSubmitReservation = async () => {
     if (!station || !startTime || !endTime || !connectorType) {
       setError('Please fill in all required fields');
@@ -149,7 +130,6 @@ const ReservationPage: React.FC = () => {
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         estimatedEnergy,
-        estimatedCost: calculateEstimatedCost(),
       };
 
       const response = await ApiService.createReservation(reservationData);
@@ -342,28 +322,26 @@ const ReservationPage: React.FC = () => {
                 </Box>
                 <Box>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-                    Estimated Cost:
+                    Cost:
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 600, color: '#4CAF50' }}>
-                    {station.pricing.currency} {calculateEstimatedCost().toFixed(2)}
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#4CAF50' }}>
+                    Will be calculated based on actual usage
                   </Typography>
-                  {station && startTime && endTime && (
-                    <Box sx={{ mt: 1 }}>
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      Pricing: {station.pricing.currency} {station.pricing.perKwh}/kWh
+                    </Typography>
+                    {station.pricing.perMinute && (
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                        Energy: {station.pricing.currency} {(estimatedEnergy * station.pricing.perKwh).toFixed(2)}
+                        Time rate: {station.pricing.currency} {station.pricing.perMinute}/min
                       </Typography>
-                      {station.pricing.perMinute && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                          Time: {station.pricing.currency} {(calculateDuration() * 60 * station.pricing.perMinute).toFixed(2)}
-                        </Typography>
-                      )}
-                      {station.pricing.sessionFee && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                          Session fee: {station.pricing.currency} {station.pricing.sessionFee.toFixed(2)}
-                        </Typography>
-                      )}
-                    </Box>
-                  )}
+                    )}
+                    {station.pricing.sessionFee && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        Session fee: {station.pricing.currency} {station.pricing.sessionFee}
+                      </Typography>
+                    )}
+                  </Box>
                 </Box>
               </Box>
 
