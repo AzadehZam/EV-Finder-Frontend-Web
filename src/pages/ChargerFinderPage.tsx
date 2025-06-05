@@ -210,13 +210,12 @@ const ChargerFinderPage: React.FC = () => {
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
       Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c;
+    const distance = R * c; 
     
-    const miles = distance * 0.621371;
-    if (miles < 1) {
-      return `${(miles * 5280).toFixed(0)} ft`;
+    if (distance < 1) {
+      return `${(distance * 1000).toFixed(0)} m`;
     } else {
-      return `${miles.toFixed(1)} mi`;
+      return `${distance.toFixed(1)} km`;
     }
   };
 
@@ -231,10 +230,35 @@ const ChargerFinderPage: React.FC = () => {
     navigate(`/reservation/${chargerId}`);
   };
 
-  const filteredChargers = stations.filter(charger =>
-    charger.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    charger.address.street.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredChargers = stations
+    .filter(charger =>
+      charger.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      charger.address.street.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .map((charger) => {
+      if (!userLocation) return { ...charger, distance: Infinity, distanceValue: Infinity };
+      
+      // Calculate distance from user location
+      const distance = calculateDistance(
+        userLocation.lat,
+        userLocation.lng,
+        charger.location.coordinates[1], // lat
+        charger.location.coordinates[0]  // lng
+      );
+      
+      // Extract numeric value for filtering and sorting
+      const distanceValue = parseFloat(distance.replace(/[^\d.]/g, ''));
+      
+      return { ...charger, distance, distanceValue };
+    })
+    .filter((charger) => {
+      // Only show stations within 100km
+      return charger.distanceValue <= 100;
+    })
+    .sort((a, b) => {
+      // Sort by distance (closest first)
+      return a.distanceValue - b.distanceValue;
+    });
 
   if (loading || locationLoading) {
     return (
@@ -313,8 +337,6 @@ const ChargerFinderPage: React.FC = () => {
                 const lat = charger.location.coordinates[1];
                 const lng = charger.location.coordinates[0];
                 const customIcon = createEvChargerIcon(availabilityStatus);
-                
-                console.log(`Creating marker for ${charger.name} at [${lat}, ${lng}] with status: ${availabilityStatus}`);
                 
                 return (
                   <Marker
@@ -400,12 +422,7 @@ const ChargerFinderPage: React.FC = () => {
                       {userLocation && (
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                           <Navigation sx={{ fontSize: 16, mr: 0.5 }} />
-                          {calculateDistance(
-                            userLocation.lat,
-                            userLocation.lng,
-                            charger.location.coordinates[1], // latitude
-                            charger.location.coordinates[0]  // longitude
-                          )}
+                          {charger.distance}
                         </Typography>
                       )}
                       
@@ -456,9 +473,6 @@ const ChargerFinderPage: React.FC = () => {
               height: '100%', 
               width: '100%',
             }}
-            whenReady={() => {
-              console.log('Map loaded successfully');
-            }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -477,8 +491,6 @@ const ChargerFinderPage: React.FC = () => {
               const lat = charger.location.coordinates[1];
               const lng = charger.location.coordinates[0];
               const customIcon = createEvChargerIcon(availabilityStatus);
-              
-              console.log(`Creating marker for ${charger.name} at [${lat}, ${lng}] with status: ${availabilityStatus}`);
               
               return (
                 <Marker
@@ -517,34 +529,6 @@ const ChargerFinderPage: React.FC = () => {
             })}
           </MapContainer>
         )}
-        
-        {/* Map Legend - Desktop Only */}
-        <Card sx={{
-          position: 'absolute',
-          bottom: 20,
-          right: 20,
-          zIndex: 1000,
-          p: 1,
-          minWidth: 150
-        }}>
-          <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
-            Station Status
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#22C55E' }} />
-              <Typography variant="caption">Available</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#FF9800' }} />
-              <Typography variant="caption">Limited</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#F44336' }} />
-              <Typography variant="caption">Unavailable</Typography>
-            </Box>
-          </Box>
-        </Card>
       </Box>
 
       {/* Charger List Section - Right Side */}
@@ -604,12 +588,7 @@ const ChargerFinderPage: React.FC = () => {
                   {userLocation && (
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                       <Navigation sx={{ fontSize: 16, mr: 0.5 }} />
-                      {calculateDistance(
-                        userLocation.lat,
-                        userLocation.lng,
-                        charger.location.coordinates[1], // latitude
-                        charger.location.coordinates[0]  // longitude
-                      )}
+                      {charger.distance}
                     </Typography>
                   )}
                   
