@@ -7,20 +7,9 @@ import {
   CardContent,
   Avatar,
   Button,
-  List,
-  ListItemIcon,
-  ListItemText,
-  ListItemButton,
-  Divider,
 } from '@mui/material';
 import {
-  EvStation,
-  Notifications,
-  Help,
-  Info,
   Logout,
-  Edit,
-  ArrowForwardIos,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -30,39 +19,6 @@ const ProfilePage: React.FC = () => {
   const handleLogout = () => {
     logout();
   };
-
-  const profileOptions = [
-    {
-      icon: <Edit />,
-      title: 'Edit Profile',
-      description: 'Update your personal information',
-      action: () => console.log('Edit profile'),
-    },
-    {
-      icon: <EvStation />,
-      title: 'Vehicle Settings',
-      description: 'Manage your EV preferences',
-      action: () => console.log('Vehicle settings'),
-    },
-    {
-      icon: <Notifications />,
-      title: 'Notifications',
-      description: 'Manage notification preferences',
-      action: () => console.log('Notifications'),
-    },
-    {
-      icon: <Help />,
-      title: 'Help & Support',
-      description: 'Get help and contact support',
-      action: () => console.log('Help & Support'),
-    },
-    {
-      icon: <Info />,
-      title: 'About',
-      description: 'App version and information',
-      action: () => console.log('About'),
-    },
-  ];
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
@@ -95,61 +51,7 @@ const ProfilePage: React.FC = () => {
             <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
               {user?.email || 'user@example.com'}
             </Typography>
-            
-            <Button
-              variant="outlined"
-              size="large"
-              startIcon={<Edit />}
-              onClick={() => console.log('Edit profile')}
-              sx={{ px: 4, py: 1.5 }}
-            >
-              Edit Profile
-            </Button>
           </CardContent>
-        </Card>
-
-        {/* Profile Options */}
-        <Card sx={{ mb: 4 }}>
-          <List>
-            {profileOptions.map((option, index) => (
-              <React.Fragment key={option.title}>
-                <ListItemButton 
-                  onClick={option.action}
-                  sx={{ py: 2 }}
-                >
-                  <ListItemIcon>
-                    <Box
-                      sx={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: '50%',
-                        backgroundColor: '#f0f8f0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#4CAF50',
-                      }}
-                    >
-                      {option.icon}
-                    </Box>
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={option.title}
-                    secondary={option.description}
-                    sx={{ 
-                      ml: 2,
-                      '& .MuiListItemText-primary': {
-                        fontSize: '1.1rem',
-                        fontWeight: 500,
-                      },
-                    }}
-                  />
-                  <ArrowForwardIos sx={{ color: '#ccc', fontSize: 18 }} />
-                </ListItemButton>
-                {index < profileOptions.length - 1 && <Divider />}
-              </React.Fragment>
-            ))}
-          </List>
         </Card>
 
         {/* Logout Section */}
