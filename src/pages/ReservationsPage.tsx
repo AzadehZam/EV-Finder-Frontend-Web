@@ -244,53 +244,61 @@ const ReservationsPage: React.FC = () => {
   const renderReservationCard = (reservation: Reservation) => {
     try {
       return (
-        <Card key={reservation._id}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-              <EvStation sx={{ mr: 1, color: '#4CAF50' }} />
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="h6" sx={{ fontSize: '1rem', mb: 0.5 }}>
-                  {reservation.stationId?.name || 'Unknown Station'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  <LocationOn sx={{ fontSize: 16, mr: 0.5 }} />
-                  {reservation.stationId?.address 
-                    ? `${reservation.stationId.address.street}, ${reservation.stationId.address.city}, ${reservation.stationId.address.state}`
-                    : 'Unknown Address'
-                  }
-                </Typography>
+        <Card key={reservation._id} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <CardContent sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            height: '100%',
+            flex: 1,
+            justifyContent: 'space-between'
+          }}>
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                <EvStation sx={{ mr: 1, color: '#4CAF50' }} />
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="h6" sx={{ fontSize: '1rem', mb: 0.5 }}>
+                    {reservation.stationId?.name || 'Unknown Station'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    <LocationOn sx={{ fontSize: 16, mr: 0.5 }} />
+                    {reservation.stationId?.address 
+                      ? `${reservation.stationId.address.street}, ${reservation.stationId.address.city}, ${reservation.stationId.address.state}`
+                      : 'Unknown Address'
+                    }
+                  </Typography>
+                </Box>
+                <Chip
+                  icon={getStatusIcon(getDisplayStatus(reservation.status))}
+                  label={getDisplayStatus(reservation.status).charAt(0).toUpperCase() + getDisplayStatus(reservation.status).slice(1)}
+                  size="small"
+                  sx={{ color: getStatusColor(getDisplayStatus(reservation.status)) }}
+                />
               </Box>
-              <Chip
-                icon={getStatusIcon(getDisplayStatus(reservation.status))}
-                label={getDisplayStatus(reservation.status).charAt(0).toUpperCase() + getDisplayStatus(reservation.status).slice(1)}
-                size="small"
-                sx={{ color: getStatusColor(getDisplayStatus(reservation.status)) }}
-              />
-            </Box>
 
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" sx={{ mb: 0.5 }}>
-                <strong>Date:</strong> {formatDate(reservation.startTime)}
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 0.5 }}>
-                <strong>Time:</strong> {formatTime(reservation.startTime)} - {formatTime(reservation.endTime)}
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 0.5 }}>
-                <strong>Connector:</strong> {reservation.connectorType}
-              </Typography>
-              {(reservation.totalCost || reservation.estimatedCost) && (
+              <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" sx={{ mb: 0.5 }}>
-                  <strong>Cost:</strong> ${(reservation.totalCost || reservation.estimatedCost)?.toFixed(2)}
+                  <strong>Date:</strong> {formatDate(reservation.startTime)}
                 </Typography>
-              )}
-              {reservation.energyDelivered && (
-                <Typography variant="body2">
-                  <strong>Energy:</strong> {reservation.energyDelivered.toFixed(1)} kWh
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  <strong>Time:</strong> {formatTime(reservation.startTime)} - {formatTime(reservation.endTime)}
                 </Typography>
-              )}
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  <strong>Connector:</strong> {reservation.connectorType}
+                </Typography>
+                {(reservation.totalCost || reservation.estimatedCost) && (
+                  <Typography variant="body2" sx={{ mb: 0.5 }}>
+                    <strong>Cost:</strong> ${(reservation.totalCost || reservation.estimatedCost)?.toFixed(2)}
+                  </Typography>
+                )}
+                {reservation.energyDelivered && (
+                  <Typography variant="body2">
+                    <strong>Energy:</strong> {reservation.energyDelivered.toFixed(1)} kWh
+                  </Typography>
+                )}
+              </Box>
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1, mt: 'auto' }}>
               {reservation.status === 'active' && new Date(reservation.startTime) <= new Date() && (
                 <Button
                   variant="contained"
@@ -347,8 +355,14 @@ const ReservationsPage: React.FC = () => {
     } catch (error) {
       console.error('Error rendering reservation card:', error);
       return (
-        <Card key={reservation._id || Math.random()}>
-          <CardContent>
+        <Card key={reservation._id || Math.random()} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <CardContent sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            height: '100%',
+            flex: 1,
+            justifyContent: 'center'
+          }}>
             <Alert severity="error">
               Error displaying reservation details
             </Alert>
@@ -418,6 +432,7 @@ const ReservationsPage: React.FC = () => {
             xl: 'repeat(4, 1fr)',
           }, 
           gap: 3,
+          alignItems: 'stretch',
         }}>
           {getTabData().length > 0 ? (
             getTabData().map(renderReservationCard)
