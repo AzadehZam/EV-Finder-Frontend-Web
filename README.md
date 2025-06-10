@@ -1,188 +1,275 @@
 # EV Finder Web Application
 
-A modern web application for finding and reserving EV charging stations, built with React, TypeScript, and Material-UI.
+A modern, responsive web application for finding and reserving EV charging stations across Canada. Built with React, TypeScript, and Material-UI, offering real-time station availability, intelligent distance-based filtering, and seamless reservation management.
 
-## Features
+## 🌟 Project Overview
 
-- **Authentication**: Secure login with Auth0 and Google OAuth
-- **Charger Finder**: Interactive map with nearby charging stations
-- **Reservations**: Book, manage, and track charging sessions
-- **Profile Management**: User profile and settings
-- **Real-time Data**: Live availability and pricing information
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
+EV Finder is a comprehensive electric vehicle charging station locator that helps EV drivers find available charging stations within their area. The application provides an interactive map interface, real-time availability data, and allows users to reserve charging sessions in advance. The platform focuses on Canadian markets with support for CAD pricing and local station networks.
 
-## Tech Stack
+## ✨ Features
 
-- **Frontend**: React 19, TypeScript, Vite
-- **UI Framework**: Material-UI (MUI)
-- **Authentication**: Auth0
-- **Maps**: React Leaflet with OpenStreetMap
-- **Date/Time**: MUI X Date Pickers with Day.js
-- **HTTP Client**: Axios
-- **Routing**: React Router DOM
+### 🗺️ **Interactive Map & Location Services**
+- **Real-time User Location**: Automatic geolocation with fallback to Vancouver area
+- **Interactive Map**: Powered by React Leaflet with OpenStreetMap tiles
+- **Custom Station Markers**: Color-coded availability indicators (Available/Limited/Unavailable)
+- **Distance-based Filtering**: Automatically filters stations within 100km radius
+- **Smart Distance Calculation**: Displays distances in kilometers and meters with precise calculations
 
-## Getting Started
+### 🔍 **Advanced Search & Filtering**
+- **Text Search**: Search by station name or address
+- **Proximity Sorting**: Stations automatically sorted by distance from user location
+- **Real-time Filtering**: Instant results as you type
+- **Geographic Boundaries**: Intelligent filtering to show only relevant nearby stations
+
+### ⚡ **Station Information & Management**
+- **Comprehensive Station Details**: Name, address, connector types, pricing, and amenities
+- **Real-time Availability**: Live port availability with color-coded status indicators
+- **Connector Type Support**: CHAdeMO, CCS, Type 2, Tesla Supercharger, and more
+- **Pricing Information**: CAD pricing per kWh with transparent cost display
+- **Station Ratings**: User ratings and reviews integration
+
+### 📱 **Responsive Design**
+- **Mobile-First Approach**: Optimized layouts for mobile, tablet, and desktop
+- **Adaptive UI**: Different layouts for mobile (vertical stack) and desktop (side-by-side)
+- **Touch-Friendly**: Optimized for touch interactions on mobile devices
+- **Fast Performance**: Efficient rendering and data loading
+
+### 🔐 **Authentication & User Management**
+- **Secure Login**: Auth0 integration with Google OAuth support
+- **Persistent Sessions**: JWT token management with automatic refresh
+- **User Profiles**: Profile management and vehicle settings
+- **Secure API Communication**: Protected endpoints with authentication headers
+
+### 📅 **Reservation System**
+- **Advanced Booking**: Date/time picker with availability checking
+- **Connector Selection**: Choose specific connector types for reservations
+- **Energy Estimation**: Estimate charging time and cost
+- **Reservation Management**: View, modify, and cancel existing reservations
+- **Session Tracking**: Monitor active and past charging sessions
+
+## 🛠️ Installation Instructions
 
 ### Prerequisites
+- **Node.js**: Version 18 or higher
+- **npm**: Comes with Node.js
+- **Auth0 Account**: Required for authentication (free tier available)
+- **Backend API**: EV Finder backend service running
 
-- Node.js 18+ and npm
-- Auth0 account (configured for web application)
-- Backend API running (see Backend directory)
+### Step-by-Step Setup
 
-### Installation
+1. **Clone and Navigate to Project**
+   ```bash
+   git clone <repository-url>
+   cd Frontend/Frontend-web
+   ```
 
-1. Clone the repository and navigate to the web frontend:
-```bash
-cd Frontend/Frontend-web
-```
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+3. **Environment Configuration**
+   Create a `.env` file in the root directory:
+   ```bash
+   # Auth0 Configuration
+   VITE_AUTH0_DOMAIN=your-auth0-domain.auth0.com
+   VITE_AUTH0_CLIENT_ID=your-auth0-client-id
+   
+   # API Configuration
+   VITE_API_BASE_URL=http://localhost:3000/api
+   # For production: https://ev-finder-backend.onrender.com/api
+   ```
 
-3. Configure environment variables:
-```bash
-# Create .env file with your configuration
-VITE_AUTH0_DOMAIN=your-auth0-domain
-VITE_AUTH0_CLIENT_ID=your-auth0-client-id
-VITE_API_BASE_URL=http://localhost:3000/api
-```
+4. **Auth0 Setup**
+   - Create an Auth0 application (Single Page Application type)
+   - Configure Allowed Callback URLs: `http://localhost:5173, https://yourdomain.com`
+   - Configure Allowed Logout URLs: `http://localhost:5173, https://yourdomain.com`
+   - Configure Allowed Web Origins: `http://localhost:5173, https://yourdomain.com`
 
-4. Start the development server:
-```bash
-npm run dev
-```
+5. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
 
-5. Open [http://localhost:5173](http://localhost:5173) in your browser
+6. **Access Application**
+   Open [http://localhost:5173](http://localhost:5173) in your browser
 
-## Project Structure
+## 🚀 Usage
 
-```
-src/
-├── components/          # Reusable UI components
-│   ├── LoadingScreen.tsx
-│   └── MainLayout.tsx
-├── contexts/           # React contexts
-│   └── AuthContext.tsx
-├── pages/              # Main application pages
-│   ├── WelcomePage.tsx
-│   ├── ChargerFinderPage.tsx
-│   ├── ReservationsPage.tsx
-│   ├── ProfilePage.tsx
-│   └── ReservationPage.tsx
-├── services/           # API and external services
-│   └── api.ts
-├── config/             # Configuration files
-│   └── auth0.ts
-└── App.tsx             # Main application component
-```
+### Getting Started
+1. **Login**: Use the welcome screen to authenticate with Auth0/Google
+2. **Location Permission**: Allow location access for personalized results
+3. **Explore Stations**: View nearby charging stations on the interactive map
+4. **Search & Filter**: Use the search bar to find specific stations
+5. **Make Reservations**: Click "Reserve" on any available station
 
-## Key Features
+### Using the Map
+- **Pan & Zoom**: Navigate the map to explore different areas
+- **Station Markers**: Click on colored markers to view station details
+- **User Location**: Blue marker shows your current location
+- **Popup Details**: Click markers for quick station information and reservation access
 
-### Authentication Flow
-- Welcome screen with Auth0 login
-- Persistent sessions with JWT tokens
-- Automatic token refresh and logout
+### Making Reservations
+1. Click "Reserve" on any station card or map popup
+2. Select your preferred date and time
+3. Choose the appropriate connector type
+4. Set your estimated energy requirements
+5. Confirm your reservation details
+6. Receive confirmation and add to calendar
 
-### Charger Finder
-- Interactive map with user location
-- Search and filter charging stations
-- Real-time availability status
-- Distance calculation and directions
+### Managing Your Account
+- **Profile**: Access via the user menu in the top navigation
+- **Reservations**: View all upcoming, active, and past reservations
+- **Settings**: Manage vehicle information and notification preferences
 
-### Reservation Management
-- Book charging sessions with date/time selection
-- View upcoming, active, and past reservations
-- Cancel or modify reservations
-- Start charging sessions remotely
+## 🔧 Technologies Used
 
-### User Profile
-- View and edit profile information
-- Manage vehicle settings
-- Notification preferences
-- Help and support access
+### **Frontend Framework & Language**
+- **React 19**: Latest version with concurrent features and improved performance
+- **TypeScript**: Full type safety and enhanced developer experience
+- **Vite**: Fast build tool with hot module replacement
 
-## API Integration
+### **UI Framework & Styling**
+- **Material-UI (MUI) 7.1.0**: Modern React component library
+- **Emotion**: CSS-in-JS styling solution integrated with MUI
+- **MUI Icons**: Comprehensive icon library
+- **Responsive Design**: Built-in responsive grid system
 
-The web app connects to the same backend API as the mobile application:
+### **Authentication & Security**
+- **Auth0**: Enterprise-grade authentication service
+- **JWT Tokens**: Secure token-based authentication
+- **Google OAuth**: Social login integration
 
-- **Development**: `http://localhost:3000/api`
-- **Production**: `https://ev-finder-backend.onrender.com/api`
+### **Maps & Geolocation**
+- **React Leaflet 5.0.0**: React wrapper for Leaflet mapping library
+- **Leaflet 1.9.4**: Open-source interactive maps
+- **OpenStreetMap**: Free, community-driven map data
+- **Geolocation API**: Browser-based location services
 
-### Key Endpoints
-- `POST /users/auth0` - Authenticate with Auth0
-- `GET /users/profile` - Get user profile
-- `GET /stations/nearby` - Find nearby charging stations
-- `POST /reservations` - Create new reservation
-- `GET /reservations` - Get user reservations
+### **HTTP & API Communication**
+- **Axios 1.9.0**: Promise-based HTTP client
+- **RESTful API**: Clean API integration with error handling
+- **Real-time Data**: Live station availability updates
 
-## Development
+### **Date & Time Management**
+- **MUI X Date Pickers**: Advanced date/time selection components
+- **Day.js**: Lightweight date manipulation library
+- **Timezone Support**: Proper handling of local times
 
-### Available Scripts
+### **Development & Testing**
+- **ESLint**: Code quality and style enforcement
+- **Jest**: JavaScript testing framework
+- **React Testing Library**: React component testing utilities
+- **TypeScript ESLint**: TypeScript-specific linting rules
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
+### **Build & Deployment**
+- **Vite Build System**: Fast production builds
+- **Render.com**: Cloud deployment platform
+- **Environment Variables**: Secure configuration management
 
-### Code Style
+## 🚀 Future Improvements
 
-- TypeScript for type safety
-- ESLint for code quality
-- Material-UI design system
-- Responsive design principles
+### **Enhanced Features**
+- **Route Planning**: Multi-stop trip planning with charging stops
+- **Real-time Notifications**: Push notifications for reservation updates
+- **Payment Integration**: In-app payment processing with Stripe/PayPal
+- **Energy Management**: Battery level tracking and charging optimization
+- **Social Features**: User reviews, ratings, and community features
 
-## Deployment
+### **Technical Enhancements**
+- **Progressive Web App (PWA)**: Offline functionality and app installation
+- **Advanced Caching**: Service worker implementation for faster loading
+- **WebSocket Integration**: Real-time station availability updates
+- **Machine Learning**: Predictive availability based on usage patterns
+- **Performance Optimization**: Code splitting and lazy loading
 
-### Build for Production
+### **User Experience**
+- **Dark Mode**: Theme switching for better accessibility
+- **Multi-language Support**: Internationalization (i18n) for French/English
+- **Accessibility**: Enhanced screen reader support and keyboard navigation
+- **Voice Integration**: Voice commands for hands-free operation
+- **Augmented Reality**: AR station finding using device camera
 
+### **Platform Expansion**
+- **Mobile Apps**: Native iOS and Android applications
+- **Fleet Management**: Business dashboard for fleet operators
+- **API Expansion**: Public API for third-party integrations
+- **Smart City Integration**: Integration with municipal charging networks
+- **Cross-platform Sync**: Sync preferences across devices
+
+### **Business Features**
+- **Subscription Plans**: Premium features for frequent users
+- **Corporate Accounts**: Business expense tracking and reporting
+- **Loyalty Program**: Rewards for frequent charging
+- **Partner Network**: Integration with major charging networks
+- **Analytics Dashboard**: Usage statistics and insights
+
+## 📜 Available Scripts
+
+- **`npm run dev`**: Start development server with hot reload
+- **`npm run build`**: Build optimized production bundle
+- **`npm run preview`**: Preview production build locally
+- **`npm run lint`**: Run ESLint for code quality checks
+- **`npm run test`**: Run Jest test suite
+- **`npm run test:watch`**: Run tests in watch mode
+- **`npm run test:coverage`**: Generate test coverage report
+- **`npm run test:ci`**: Run tests for CI/CD pipeline
+
+## 🚀 Deployment
+
+### **Production Build**
 ```bash
 npm run build
 ```
+Build artifacts are stored in the `dist/` directory.
 
-The build artifacts will be stored in the `dist/` directory.
+### **Environment Variables for Production**
+```bash
+VITE_AUTH0_DOMAIN=your-auth0-domain.auth0.com
+VITE_AUTH0_CLIENT_ID=your-auth0-client-id
+VITE_API_BASE_URL=https://ev-finder-backend.onrender.com/api
+```
 
-### Environment Variables
+### **Deployment Platforms**
+- **Render.com** (Current): Configured with `render.yaml`
+- **Vercel**: Optimal for React applications
+- **Netlify**: Great for static site deployment
+- **AWS S3 + CloudFront**: Enterprise-grade hosting
+- **Any Static Hosting**: Compatible with standard static hosting
 
-For production deployment, configure:
+### **Database & Backend**
+- **MongoDB**: Production database hosted on MongoDB Atlas
+- **Backend API**: Node.js/Express backend deployed on Render.com
+- **Environment Configuration**: Secure environment variable management
 
-- `VITE_AUTH0_DOMAIN` - Your Auth0 domain
-- `VITE_AUTH0_CLIENT_ID` - Your Auth0 client ID
-- `VITE_API_BASE_URL` - Backend API URL
+## 🤝 Contributing
 
-### Deployment Platforms
+1. **Fork the Repository**: Create your own fork of the project
+2. **Create Feature Branch**: `git checkout -b feature/amazing-feature`
+3. **Make Changes**: Implement your feature or bug fix
+4. **Add Tests**: Include tests for new functionality
+5. **Commit Changes**: `git commit -m 'Add amazing feature'`
+6. **Push to Branch**: `git push origin feature/amazing-feature`
+7. **Submit Pull Request**: Create a PR with detailed description
 
-The app can be deployed to:
-- Vercel
-- Netlify
-- AWS S3 + CloudFront
-- Any static hosting service
+### **Development Standards**
+- Follow TypeScript best practices
+- Maintain test coverage above 80%
+- Use ESLint and Prettier for code formatting
+- Write clear, descriptive commit messages
+- Update documentation for new features
 
-## Auth0 Configuration
+## 📄 License
 
-Configure your Auth0 application:
+This project is licensed under the MIT License. See the LICENSE file for details.
 
-1. **Application Type**: Single Page Application
-2. **Allowed Callback URLs**: `http://localhost:5173, https://yourdomain.com`
-3. **Allowed Logout URLs**: `http://localhost:5173, https://yourdomain.com`
-4. **Allowed Web Origins**: `http://localhost:5173, https://yourdomain.com`
+## 🆘 Support & Contact
 
-## Contributing
+- **Documentation**: Check this README and inline code comments
+- **Issues**: Open a GitHub issue for bugs or feature requests
+- **Discussions**: Use GitHub Discussions for questions and ideas
+- **Email**: Contact the development team for urgent matters
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+---
 
-## License
-
-This project is licensed under the MIT License.
-
-## Support
-
-For support and questions:
-- Check the documentation
-- Open an issue on GitHub
-- Contact the development team
+**Built with ❤️ for the EV community in Canada 🇨🇦**
