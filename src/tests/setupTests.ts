@@ -2,11 +2,25 @@ import '@testing-library/jest-dom';
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
+  root: Element | Document | null = null;
+  rootMargin: string = '';
+  thresholds: ReadonlyArray<number> = [];
+  
+  constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+    this.root = options?.root || null;
+    this.rootMargin = options?.rootMargin || '';
+    this.thresholds = options?.threshold ? 
+      (Array.isArray(options.threshold) ? options.threshold : [options.threshold]) : 
+      [];
+  }
+  
   disconnect() {}
   observe() {}
   unobserve() {}
-};
+  takeRecords(): IntersectionObserverEntry[] {
+    return [];
+  }
+} as any;
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
@@ -46,9 +60,4 @@ Object.defineProperty(window, 'scrollTo', {
 // Mock fetch if not already mocked in individual tests
 if (!global.fetch) {
   global.fetch = jest.fn();
-}
-
-// Mock CSS module imports
-jest.mock('*.css', () => ({}));
-jest.mock('*.scss', () => ({}));
-jest.mock('*.sass', () => ({})); 
+} 

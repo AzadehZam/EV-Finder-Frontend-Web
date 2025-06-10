@@ -82,7 +82,7 @@ describe('ApiService', () => {
         json: async () => {
           throw new Error('Invalid JSON');
         },
-      } as Response);
+      } as any);
 
       const result = await ApiService.getStations();
 
@@ -350,6 +350,158 @@ describe('ApiService', () => {
       } as Response);
 
       const result = await ApiService.cancelReservation(reservationId);
+
+      expect(result).toEqual({
+        success: false,
+        error: expect.any(Error),
+      });
+    });
+  });
+
+  describe('deleteReservation', () => {
+    test('deletes reservation successfully', async () => {
+      const reservationId = '507f1f77bcf86cd799439013';
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({ message: 'Reservation deleted successfully' }),
+      } as any);
+
+      const result = await ApiService.deleteReservation(reservationId);
+
+      expect(mockFetch).toHaveBeenCalledWith(`http://localhost:3000/api/reservations/${reservationId}/delete`, {
+        method: 'DELETE',
+      });
+
+      expect(result).toEqual({
+        success: true,
+        data: { message: 'Reservation deleted successfully' },
+      });
+    });
+
+    test('handles reservation not found for deletion', async () => {
+      const reservationId = 'nonexistent';
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        json: async () => ({ message: 'Reservation not found' }),
+      } as any);
+
+      const result = await ApiService.deleteReservation(reservationId);
+
+      expect(result).toEqual({
+        success: false,
+        error: expect.any(Error),
+      });
+    });
+
+    test('handles deletion of active reservation', async () => {
+      const reservationId = '507f1f77bcf86cd799439013';
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: async () => ({ message: 'Cannot delete active reservation' }),
+      } as any);
+
+      const result = await ApiService.deleteReservation(reservationId);
+
+      expect(result).toEqual({
+        success: false,
+        error: expect.any(Error),
+      });
+    });
+
+    test('handles unauthorized deletion attempt', async () => {
+      const reservationId = '507f1f77bcf86cd799439013';
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        json: async () => ({ message: 'Not authorized to delete this reservation' }),
+      } as any);
+
+      const result = await ApiService.deleteReservation(reservationId);
+
+      expect(result).toEqual({
+        success: false,
+        error: expect.any(Error),
+      });
+    });
+
+    test('handles server error during deletion', async () => {
+      const reservationId = '507f1f77bcf86cd799439013';
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+      } as any);
+
+      const result = await ApiService.deleteReservation(reservationId);
+
+      expect(result).toEqual({
+        success: false,
+        error: expect.any(Error),
+      });
+    });
+
+    test('handles network error during deletion', async () => {
+      const reservationId = '507f1f77bcf86cd799439013';
+
+      mockFetch.mockRejectedValueOnce(new TypeError('Network error'));
+
+      const result = await ApiService.deleteReservation(reservationId);
+
+      expect(result).toEqual({
+        success: false,
+        error: expect.any(TypeError),
+      });
+    });
+
+    test('handles invalid reservation ID format', async () => {
+      const invalidReservationId = 'invalid-id-format';
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: async () => ({ message: 'Invalid reservation ID format' }),
+      } as any);
+
+      const result = await ApiService.deleteReservation(invalidReservationId);
+
+      expect(mockFetch).toHaveBeenCalledWith(`http://localhost:3000/api/reservations/${invalidReservationId}/delete`, {
+        method: 'DELETE',
+      });
+
+      expect(result).toEqual({
+        success: false,
+        error: expect.any(Error),
+      });
+    });
+
+    test('handles empty reservation ID', async () => {
+      const emptyReservationId = '';
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: async () => ({ message: 'Reservation ID is required' }),
+      } as any);
+
+      const result = await ApiService.deleteReservation(emptyReservationId);
+
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/reservations//delete', {
+        method: 'DELETE',
+      });
 
       expect(result).toEqual({
         success: false,

@@ -167,6 +167,143 @@ EV Finder is a comprehensive electric vehicle charging station locator that help
 - **Render.com**: Cloud deployment platform
 - **Environment Variables**: Secure configuration management
 
+## 🧪 Testing Framework
+
+### **Testing Technologies**
+- **Jest 29.7.0**: JavaScript testing framework with built-in assertions
+- **React Testing Library**: Utilities for testing React components
+- **TypeScript Support**: Full TypeScript integration with ts-jest
+- **jsdom Environment**: Browser-like testing environment for DOM testing
+- **User Event Testing**: Realistic user interaction simulation
+
+### **Test Structure**
+```
+src/tests/
+├── setupTests.ts              # Global test setup and mocks
+├── ApiService.test.ts         # API service unit tests
+├── ChargerFinderPage.test.tsx # Map and station finder tests
+├── EvChargerIcons.test.ts     # Custom icon component tests
+├── utils.test.ts              # Utility function tests
+└── deleteReservation.test.ts  # Delete reservation functionality tests
+```
+
+### **Running Tests**
+
+#### **Development Testing**
+```bash
+# Run all tests once
+npm test
+
+# Run tests in watch mode (recommended for development)
+npm run test:watch
+
+# Run specific test file
+npm test -- --testPathPattern=deleteReservation.test.ts
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Run tests for CI/CD pipeline
+npm run test:ci
+```
+
+#### **Test Coverage**
+- **Target Coverage**: Minimum 80% code coverage
+- **Current Coverage**: High coverage for critical paths
+- **Coverage Reports**: Generated in `coverage/` directory
+- **CI Integration**: Automated testing on pull requests
+
+### **Key Test Suites**
+
+#### **🗑️ Delete Reservation Tests (`deleteReservation.test.ts`)**
+Comprehensive test suite covering reservation deletion functionality:
+
+**API Integration Tests (8 tests)**
+- ✅ **Successful deletion** - Verifies API call and response handling
+- ✅ **Reservation not found** - Tests 404 error scenarios
+- ✅ **Unauthorized deletion** - Tests 403 permission errors
+- ✅ **Server errors** - Tests 500 internal server errors
+- ✅ **Network errors** - Tests connectivity issues
+- ✅ **Invalid reservation ID** - Tests input validation
+- ✅ **Active reservation deletion** - Tests business rule enforcement
+- ✅ **Empty reservation ID** - Tests edge cases
+
+**UI Interaction Tests (4 tests)**
+- ✅ **Delete button visibility** - Only shows for completed/cancelled reservations
+- ✅ **Confirmation dialog** - Tests dialog open/close state management
+- ✅ **Confirmation message** - Verifies correct station name display
+- ✅ **Success message auto-hide** - Tests 3-second auto-hide functionality
+
+**Error Handling Tests (3 tests)**
+- ✅ **Error message formatting** - Tests user-friendly error display
+- ✅ **Status validation** - Tests which reservations can be deleted
+- ✅ **List refresh** - Tests UI refresh after successful deletion
+
+#### **🗺️ Map & Station Tests (`ChargerFinderPage.test.tsx`)**
+- Distance calculation accuracy
+- Station filtering and sorting
+- Map marker rendering
+- Search functionality
+- Location services integration
+
+#### **🔌 API Service Tests (`ApiService.test.ts`)**
+- Authentication handling
+- Station data fetching
+- Reservation creation/management
+- Error response handling
+- Network failure resilience
+
+#### **⚙️ Utility Function Tests (`utils.test.ts`)**
+- Distance calculations (kilometers/meters)
+- Coordinate transformations
+- Currency formatting
+- Address formatting
+- Availability color coding
+
+### **Test Development Guidelines**
+
+#### **Writing Tests**
+- Use **Arrange-Act-Assert** pattern for clarity
+- Mock external dependencies (API calls, browser APIs)
+- Test both happy path and error scenarios
+- Include edge cases and boundary conditions
+- Write descriptive test names that explain the scenario
+
+#### **Test Categories**
+1. **Unit Tests**: Individual functions and components
+2. **Integration Tests**: Component interactions and API integration
+3. **UI Tests**: User interaction flows and state management
+4. **Error Handling Tests**: Failure scenarios and recovery
+
+#### **Mocking Strategy**
+- **API Calls**: Mocked with controlled responses
+- **Browser APIs**: Geolocation, localStorage, etc.
+- **External Libraries**: Material-UI components when needed
+- **Environment Variables**: Controlled test configuration
+
+#### **Test Utilities**
+```typescript
+// Example test helper functions
+renderWithRouter()     // Wraps components with React Router
+mockApiResponse()      // Creates standardized API mocks
+setupUserEvent()       // Configures user interaction testing
+waitForLoadingToFinish() // Async state management testing
+```
+
+### **Continuous Integration**
+- **Automated Testing**: All tests run on pull requests
+- **Coverage Enforcement**: Minimum coverage thresholds
+- **Type Checking**: TypeScript compilation validation
+- **Linting**: Code quality checks with ESLint
+- **Build Verification**: Ensures production builds succeed
+
+### **Testing Best Practices**
+- Tests are written alongside feature development
+- Critical user flows have comprehensive test coverage
+- Error scenarios are thoroughly tested
+- Tests serve as living documentation
+- Performance-critical paths are tested for efficiency
+
 ## 🚀 Future Improvements
 
 ### **Enhanced Features**
