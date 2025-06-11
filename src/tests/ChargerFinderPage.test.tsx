@@ -144,7 +144,7 @@ describe('ChargerFinderPage', () => {
   });
 
   describe('Search Functionality', () => {
-    test('filters stations by name', async () => {
+    test('filters stations by name with debounced search', async () => {
       renderWithProviders(<ChargerFinderPage />);
       
       await waitFor(() => {
@@ -152,44 +152,83 @@ describe('ChargerFinderPage', () => {
         expect(screen.getByText('Mall Charging Station')).toBeInTheDocument();
       });
 
-      const searchInput = screen.getByPlaceholderText('Search charging stations...');
+      const searchInput = screen.getByPlaceholderText('Search stations, locations, amenities...');
       fireEvent.change(searchInput, { target: { value: 'Downtown' } });
 
+      // Wait for debounced search (300ms delay)
       await waitFor(() => {
         expect(screen.getByText('Downtown EV Hub')).toBeInTheDocument();
         expect(screen.queryByText('Mall Charging Station')).not.toBeInTheDocument();
-      });
+      }, { timeout: 500 });
     });
 
-    test('filters stations by address', async () => {
+    test('filters stations by address with debounced search', async () => {
       renderWithProviders(<ChargerFinderPage />);
       
       await waitFor(() => {
         expect(screen.getByText('Downtown EV Hub')).toBeInTheDocument();
       });
 
-      const searchInput = screen.getByPlaceholderText('Search charging stations...');
+      const searchInput = screen.getByPlaceholderText('Search stations, locations, amenities...');
       fireEvent.change(searchInput, { target: { value: 'Shopping' } });
 
+      // Wait for debounced search
       await waitFor(() => {
         expect(screen.queryByText('Downtown EV Hub')).not.toBeInTheDocument();
         expect(screen.getByText('Mall Charging Station')).toBeInTheDocument();
-      });
+      }, { timeout: 500 });
     });
 
-    test('shows no results for invalid search', async () => {
+    test('shows no results for invalid search with debounced search', async () => {
       renderWithProviders(<ChargerFinderPage />);
       
       await waitFor(() => {
-        expect(screen.getByText('2 charging stations found')).toBeInTheDocument();
+        expect(screen.getByText('2 stations found')).toBeInTheDocument();
       });
 
-      const searchInput = screen.getByPlaceholderText('Search charging stations...');
+      const searchInput = screen.getByPlaceholderText('Search stations, locations, amenities...');
       fireEvent.change(searchInput, { target: { value: 'NonexistentStation' } });
 
+      // Wait for debounced search
       await waitFor(() => {
-        expect(screen.getByText('0 charging stations found')).toBeInTheDocument();
+        expect(screen.getByText('0 stations found')).toBeInTheDocument();
+      }, { timeout: 500 });
+    });
+
+    test('shows search loading indicator during search', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Downtown EV Hub')).toBeInTheDocument();
       });
+
+      const searchInput = screen.getByPlaceholderText('Search stations, locations, amenities...');
+      fireEvent.change(searchInput, { target: { value: 'test' } });
+
+      // Should show loading indicator briefly
+      expect(screen.getByTestId('search-loading') || screen.getByRole('progressbar')).toBeDefined();
+    });
+
+    test('can clear search query', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Downtown EV Hub')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText('Search stations, locations, amenities...') as HTMLInputElement;
+      fireEvent.change(searchInput, { target: { value: 'Downtown' } });
+
+      // Wait for search to complete
+      await waitFor(() => {
+        expect(searchInput.value).toBe('Downtown');
+      });
+
+      // Click clear button
+      const clearButton = screen.getByRole('button', { name: /clear/i });
+      fireEvent.click(clearButton);
+
+      expect(searchInput.value).toBe('');
     });
   });
 
@@ -358,6 +397,270 @@ describe('ChargerFinderPage', () => {
       
       await waitFor(() => {
         expect(screen.getByText('Your Location')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Advanced Search and Filtering', () => {
+    test('toggles filter panel visibility', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Filters')).toBeInTheDocument();
+      });
+
+      const filterButton = screen.getByText('Filters');
+      
+      // Initially filters should be hidden
+      expect(screen.queryByText('Search Filters')).not.toBeInTheDocument();
+      
+      // Click to show filters
+      fireEvent.click(filterButton);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Search Filters')).toBeInTheDocument();
+      });
+    });
+
+    test('filters stations by connector type', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Downtown EV Hub')).toBeInTheDocument();
+        expect(screen.getByText('Mall Charging Station')).toBeInTheDocument();
+      });
+
+      // Open filters
+      const filterButton = screen.getByText('Filters');
+      fireEvent.click(filterButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Search Filters')).toBeInTheDocument();
+      });
+
+      // Select Tesla connector type (assuming Mall Charging Station has Tesla)
+      const connectorTypeField = screen.getByLabelText('Connector Types');
+      fireEvent.click(connectorTypeField);
+      
+      const teslaOption = screen.getByText('Tesla');
+      fireEvent.click(teslaOption);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Downtown EV Hub')).not.toBeInTheDocument();
+        expect(screen.getByText('Mall Charging Station')).toBeInTheDocument();
+      });
+    });
+
+    test('filters stations by availability', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Downtown EV Hub')).toBeInTheDocument();
+        expect(screen.getByText('Mall Charging Station')).toBeInTheDocument();
+      });
+
+      // Open filters
+      const filterButton = screen.getByText('Filters');
+      fireEvent.click(filterButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Search Filters')).toBeInTheDocument();
+      });
+
+      // Filter to only available stations
+      const availabilitySelect = screen.getByLabelText('Availability');
+      fireEvent.mouseDown(availabilitySelect);
+      
+      const availableOption = screen.getByText('Available Now');
+      fireEvent.click(availableOption);
+
+      await waitFor(() => {
+        expect(screen.getByText('Downtown EV Hub')).toBeInTheDocument();
+        expect(screen.queryByText('Mall Charging Station')).not.toBeInTheDocument();
+      });
+    });
+
+    test('sorts stations by different criteria', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Downtown EV Hub')).toBeInTheDocument();
+      });
+
+      // Open filters
+      const filterButton = screen.getByText('Filters');
+      fireEvent.click(filterButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Search Filters')).toBeInTheDocument();
+      });
+
+      // Change sort to price
+      const sortSelect = screen.getByLabelText('Sort by');
+      fireEvent.mouseDown(sortSelect);
+      
+      const priceOption = screen.getByText('Price');
+      fireEvent.click(priceOption);
+
+      // Should trigger re-sorting of results
+      await waitFor(() => {
+        expect(mockApiService.getStations).toHaveBeenCalled();
+      });
+    });
+
+    test('adjusts distance filter with slider', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Downtown EV Hub')).toBeInTheDocument();
+      });
+
+      // Open filters
+      const filterButton = screen.getByText('Filters');
+      fireEvent.click(filterButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Max Distance:')).toBeInTheDocument();
+      });
+
+      // Find and adjust distance slider
+      const distanceSlider = screen.getByRole('slider', { name: /max distance/i });
+      
+      // Simulate changing distance to 10km
+      fireEvent.change(distanceSlider, { target: { value: 10 } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Max Distance: 10 km')).toBeInTheDocument();
+      });
+    });
+
+    test('shows active filter count badge', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Filters')).toBeInTheDocument();
+      });
+
+      // Initially no active filters
+      expect(screen.queryByText('1')).not.toBeInTheDocument();
+
+      // Add a search query (counts as a filter)
+      const searchInput = screen.getByPlaceholderText('Search stations, locations, amenities...');
+      fireEvent.change(searchInput, { target: { value: 'test' } });
+
+      await waitFor(() => {
+        // Should show badge with count of 1
+        expect(screen.getByText('1')).toBeInTheDocument();
+      });
+    });
+
+    test('clears all filters', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Downtown EV Hub')).toBeInTheDocument();
+      });
+
+      // Add a search query
+      const searchInput = screen.getByPlaceholderText('Search stations, locations, amenities...');
+      fireEvent.change(searchInput, { target: { value: 'Downtown' } });
+
+      await waitFor(() => {
+        expect((searchInput as HTMLInputElement).value).toBe('Downtown');
+      });
+
+      // Should show clear button
+      const clearButton = screen.getByText('Clear');
+      fireEvent.click(clearButton);
+
+      expect((searchInput as HTMLInputElement).value).toBe('');
+    });
+  });
+
+  describe('Real-Time Updates', () => {
+    test('toggles live updates', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Live Updates') || screen.getByText('Live')).toBeInTheDocument();
+      });
+
+      const liveToggle = screen.getByRole('checkbox', { name: /live/i });
+      
+      // Should be enabled by default
+      expect(liveToggle).toBeChecked();
+
+      // Toggle off
+      fireEvent.click(liveToggle);
+      expect(liveToggle).not.toBeChecked();
+    });
+
+    test('shows last refresh timestamp', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Last updated:/)).toBeInTheDocument();
+      });
+    });
+
+    test('refreshes stations manually', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Downtown EV Hub')).toBeInTheDocument();
+      });
+
+      const refreshButton = screen.getByRole('button', { name: /refresh/i });
+      fireEvent.click(refreshButton);
+
+      // Should call API again
+      await waitFor(() => {
+        expect(mockApiService.getStations).toHaveBeenCalledTimes(2);
+      });
+    });
+  });
+
+  describe('Enhanced UI Features', () => {
+    test('shows loading state during search', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Downtown EV Hub')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText('Search stations, locations, amenities...');
+      fireEvent.change(searchInput, { target: { value: 'test' } });
+
+      // Should show loading indicator in search input
+      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    });
+
+    test('shows updated results count with loading state', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('2 stations found')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText('Search stations, locations, amenities...');
+      fireEvent.change(searchInput, { target: { value: 'Downtown' } });
+
+      // Should show updating state
+      await waitFor(() => {
+        expect(screen.getByText(/updating/)).toBeInTheDocument();
+      });
+    });
+
+    test('displays comprehensive station information', async () => {
+      renderWithProviders(<ChargerFinderPage />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Downtown EV Hub')).toBeInTheDocument();
+        expect(screen.getByText('123 Main St, Vancouver, BC')).toBeInTheDocument();
+        expect(screen.getByText('Available: 2/3')).toBeInTheDocument();
+        expect(screen.getByText('CAD 0.35/kWh')).toBeInTheDocument();
+        expect(screen.getByText('CCS')).toBeInTheDocument();
+        expect(screen.getByText('CHAdeMO')).toBeInTheDocument();
       });
     });
   });
