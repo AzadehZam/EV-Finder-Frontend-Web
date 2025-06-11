@@ -21,9 +21,7 @@ import {
   Switch,
   FormControlLabel,
   Autocomplete,
-  Divider,
   IconButton,
-  Tooltip,
   Badge,
   Dialog,
   DialogTitle,
@@ -36,8 +34,6 @@ import {
   EvStation,
   LocationOn,
   Navigation,
-  FilterList,
-  Refresh,
   Clear,
   TuneRounded,
 } from '@mui/icons-material';
