@@ -33,7 +33,7 @@ const LoadingScreen: React.FC = () => {
 
       {/* App Title */}
       <Typography variant="h4" sx={{ color: '#333', fontWeight: 'bold' }}>
-        EV Finder
+        ChargeMate
       </Typography>
 
       {/* Loading Indicator */}

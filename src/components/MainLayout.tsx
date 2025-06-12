@@ -87,7 +87,7 @@ const MainLayout: React.FC = () => {
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
         <EvStation sx={{ mr: 2, color: '#4CAF50', fontSize: 32 }} />
         <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#4CAF50' }}>
-          EV Finder
+          ChargeMate
         </Typography>
       </Box>
 
@@ -165,7 +165,7 @@ const MainLayout: React.FC = () => {
             <Toolbar>
               <EvStation sx={{ mr: 2 }} />
               <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                EV Finder
+                ChargeMate
               </Typography>
               
               {/* User Profile */}

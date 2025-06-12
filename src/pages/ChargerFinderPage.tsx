@@ -953,7 +953,7 @@ const ChargerFinderPage: React.FC = () => {
         {/* Search Header */}
         <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
           <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
-            EV Charging Stations
+            ChargeMate Charging Stations
           </Typography>
           
           {/* Search Input with Loading Indicator */}

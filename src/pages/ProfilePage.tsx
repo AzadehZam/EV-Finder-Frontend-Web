@@ -83,7 +83,7 @@ const ProfilePage: React.FC = () => {
         {/* App Info */}
         <Box sx={{ textAlign: 'center', mt: 6, mb: 2 }}>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-            EV Finder v1.0.0
+            ChargeMate v1.0.0
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Your EV Charging Companion

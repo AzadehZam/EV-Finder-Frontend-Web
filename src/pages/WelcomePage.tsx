@@ -84,7 +84,7 @@ const WelcomePage: React.FC = () => {
                 lineHeight: 1.1,
               }}
             >
-              EV Finder
+              ChargeMate
             </Typography>
 
             {/* Subtitle */}

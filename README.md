@@ -1,10 +1,10 @@
-# EV Finder Web Application
+# ChargeMate Web Application
 
 A modern, responsive web application for finding and reserving EV charging stations across Canada. Built with React, TypeScript, and Material-UI, offering real-time station availability, intelligent distance-based filtering, and seamless reservation management.
 
-## 🌟 Project Overview
+## �� Project Overview
 
-EV Finder is a comprehensive electric vehicle charging station locator that helps EV drivers find available charging stations within their area. The application provides an interactive map interface, real-time availability data, and allows users to reserve charging sessions in advance. The platform focuses on Canadian markets with support for CAD pricing and local station networks.
+ChargeMate is a comprehensive electric vehicle charging station locator that helps EV drivers find available charging stations within their area. The application provides an interactive map interface, real-time availability data, and allows users to reserve charging sessions in advance. The platform focuses on Canadian markets with support for CAD pricing and local station networks.
 
 ## ✨ Features
 

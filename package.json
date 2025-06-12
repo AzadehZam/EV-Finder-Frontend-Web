@@ -1,8 +1,8 @@
 {
-  "name": "ev-finder-web",
+  "name": "chargemate-web",
   "private": true,
   "version": "1.0.0",
-  "description": "EV Finder Web Application - Your EV Charging Companion",
+  "description": "ChargeMate Web Application - Your EV Charging Companion",
   "type": "module",
   "scripts": {
     "dev": "vite",

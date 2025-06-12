@@ -12,11 +12,11 @@ import ProfilePage from './pages/ProfilePage';
 import ReservationPage from './pages/ReservationPage';
 import LoadingScreen from './components/LoadingScreen';
 
-// Create Material-UI theme with EV Finder branding
+// Create Material-UI theme with ChargeMate branding
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#4CAF50', // EV Finder green
+      main: '#4CAF50', // ChargeMate green
       light: '#81C784',
       dark: '#388E3C',
     },
